@@ -1,0 +1,417 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  background-color: #0c0a07;
+  background-image: linear-gradient(180deg, #15110a 0%, #0c0a07 60%, #080603 100%);
+  color: #f8f4ea;
+  -webkit-font-smoothing: antialiased;
+}
+
+.serif {
+  font-family: "Playfair Display", Georgia, Cambria, serif;
+}
+
+/* Phone frame — warm cream with soft gold light ------------------------- */
+.phone {
+  max-width: 440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  background-color: #f6f1e7;
+  background-image:
+    radial-gradient(75% 32% at 50% -4%, rgba(176, 132, 44, 0.12), transparent 70%),
+    radial-gradient(55% 26% at 106% 6%, rgba(176, 132, 44, 0.08), transparent 70%),
+    linear-gradient(180deg, #faf7f0 0%, #f6f1e7 55%, #f1eadc 100%);
+  background-attachment: fixed;
+}
+/* Fill the viewport on large phones / tablets instead of leaving wide side
+   gaps around the 440px frame; the framed look returns on laptops (≥1024). */
+@media (min-width: 600px) {
+  .phone { max-width: 768px; }
+}
+@media (min-width: 1024px) {
+  .phone { max-width: 100%; }
+}
+
+/* Subtle paper grain */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+}
+
+/* Gold gradient text (prices / brand emphasis) */
+.gold-text {
+  background: linear-gradient(100deg, #8f6a22 0%, #c79a3c 45%, #a87f22 75%, #d8b76a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gold-hairline {
+  border: 1px solid rgba(176, 132, 44, 0.32);
+}
+
+/* Surfaces — white with warm shadow + gold hairline --------------------- */
+.card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid rgba(176, 132, 44, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.04), 0 14px 34px -18px rgba(60, 45, 20, 0.26);
+}
+
+.list-card {
+  background: #ffffff;
+  border: 1px solid rgba(176, 132, 44, 0.16);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.04), 0 10px 26px -18px rgba(60, 45, 20, 0.22);
+}
+
+.glass {
+  background: rgba(250, 247, 240, 0.78);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* ---- Dark luxury surfaces (shopping / wallet pages) -------------------- */
+/* A dark page background; sits over the .phone frame. */
+.luxe {
+  position: relative;
+  background-color: #0c0a07;
+  background-image:
+    radial-gradient(78% 30% at 50% -4%, rgba(176, 132, 44, 0.22), transparent 70%),
+    radial-gradient(60% 26% at 108% 8%, rgba(143, 106, 34, 0.2), transparent 70%),
+    linear-gradient(180deg, #15110a 0%, #0c0a07 60%, #080603 100%);
+}
+.card-dark {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(216, 183, 106, 0.24);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px -22px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.glass-dark {
+  background: rgba(12, 10, 7, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+.field-dark {
+  width: 100%;
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(216, 183, 106, 0.3);
+  color: #f8f4ea;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field-dark::placeholder { color: rgba(248, 244, 234, 0.4); }
+.field-dark:focus {
+  border-color: #d8b76a;
+  box-shadow: 0 0 0 4px rgba(216, 183, 106, 0.16);
+}
+.field-dark option { background: #15110a; color: #f8f4ea; }
+
+/* Black-&-gold premium hero (balance / profile header) ------------------ */
+.hero-accent {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #17130d;
+  background-image:
+    radial-gradient(120% 90% at 85% -15%, rgba(216, 183, 106, 0.45), transparent 52%),
+    radial-gradient(100% 80% at -8% 118%, rgba(143, 106, 34, 0.55), transparent 60%),
+    linear-gradient(135deg, #211a10 0%, #17130d 55%, #0f0c08 100%);
+  box-shadow: inset 0 0 0 1px rgba(216, 183, 106, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 22px 50px -24px rgba(40, 30, 10, 0.6);
+}
+.hero-accent::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(216, 183, 106, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(216, 183, 106, 0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(120% 100% at 80% 0%, #000, transparent 72%);
+  -webkit-mask-image: radial-gradient(120% 100% at 80% 0%, #000, transparent 72%);
+}
+
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(26px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Buttons — gold --------------------------------------------------------- */
+.btn-primary {
+  position: relative;
+  background: linear-gradient(180deg, #d8b76a 0%, #c79a3c 45%, #a87f22 100%);
+  color: #1c1308;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px -12px rgba(176, 132, 44, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.08s ease, filter 0.15s ease;
+}
+.btn-primary:active {
+  transform: translateY(1px) scale(0.99);
+  filter: brightness(0.96);
+}
+.btn-primary:disabled {
+  background: #e7dfce;
+  color: #aaa08d;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  background: #ffffff;
+  color: #6e511a;
+  border: 1px solid rgba(176, 132, 44, 0.45);
+  font-weight: 600;
+  border-radius: 14px;
+}
+
+/* Inputs ----------------------------------------------------------------- */
+.field {
+  width: 100%;
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(176, 132, 44, 0.3);
+  color: #1c1813;
+  font-size: 15px;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(60, 45, 20, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field::placeholder { color: rgba(28, 24, 19, 0.35); }
+.field:focus {
+  border-color: #c79a3c;
+  box-shadow: 0 0 0 4px rgba(199, 154, 60, 0.16);
+}
+.field option { background: #fff; color: #1c1813; }
+
+/* Pills ------------------------------------------------------------------ */
+.pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+.pill-success { background: #e3f4e8; color: #1f7a45; box-shadow: inset 0 0 0 1px rgba(31, 122, 69, 0.18); }
+.pill-warning { background: #f7edd4; color: #8f6a22; box-shadow: inset 0 0 0 1px rgba(176, 132, 44, 0.28); }
+.pill-muted { background: #f0ece2; color: #8a8070; box-shadow: inset 0 0 0 1px rgba(138, 128, 112, 0.2); }
+.pill-info { background: #e3edf7; color: #2a5d8f; box-shadow: inset 0 0 0 1px rgba(42, 93, 143, 0.2); }
+.pill-danger { background: #f8e3e3; color: #a13a3a; box-shadow: inset 0 0 0 1px rgba(161, 58, 58, 0.2); }
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+.chat-scrollbar::-webkit-scrollbar { width: 4px; }
+.chat-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.chat-scrollbar::-webkit-scrollbar-thumb { background: rgba(194, 154, 68, 0.2); border-radius: 2px; }
+.chat-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(194, 154, 68, 0.4); }
+.chat-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(194, 154, 68, 0.2) transparent; }
+
+/* Input textarea scrollbar — thumb inset 3px from the right border */
+.input-scrollbar::-webkit-scrollbar { width: 17px; }
+.input-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.input-scrollbar::-webkit-scrollbar-thumb { background: rgba(194, 154, 68, 0.2); border-radius: 3px; border-right: 13px solid transparent; background-clip: padding-box; }
+.input-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(194, 154, 68, 0.4); background-clip: padding-box; }
+.input-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(194, 154, 68, 0.2) transparent; }
+
+@keyframes sheet-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-sheet { animation: sheet-up 0.24s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(7px, -9px); }
+}
+.animate-orb { animation: float-orb 9s ease-in-out infinite; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-14px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toast-out { to { opacity: 0; transform: translateY(-10px) scale(0.98); } }
+.toast-in { animation: toast-in 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+.toast-out { animation: toast-out 0.2s ease forwards; }
+
+/* Product card fade-in on grid load */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-enter {
+  animation: fadeInUp 0.35s ease-out both;
+}
+
+/* ── Premium luxury animations ───────────────────────────────────────────── */
+
+/* Gold shimmer text */
+@keyframes shimmer-gold {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.text-shimmer {
+  background: linear-gradient(90deg,
+    #c79a3c 10%, #f5e8a0 30%, #e8c96a 50%, #f5e8a0 70%, #c79a3c 90%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-gold 4s linear infinite;
+}
+
+/* Brand / marquee ticker */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee-scroll 32s linear infinite;
+  will-change: transform;
+}
+.marquee-wrap:hover .animate-marquee { animation-play-state: paused; }
+/* Fade both edges of the marquee */
+.marquee-wrap {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 9%, black 91%, transparent 100%);
+  mask-image:         linear-gradient(to right, transparent 0%, black 9%, black 91%, transparent 100%);
+}
+
+/* Slow-spin decorative rings (products header) */
+@keyframes spin-cw  { to { transform: rotate( 360deg); } }
+@keyframes spin-ccw { to { transform: rotate(-360deg); } }
+.spin-cw  { animation: spin-cw  22s linear infinite; }
+.spin-ccw { animation: spin-ccw 16s linear infinite; }
+
+/* Ambient floating gold particle */
+@keyframes particle-float {
+  0%   { transform: translateY(0)    scale(1);   opacity: 0;   }
+  12%  { opacity: 0.9; }
+  88%  { opacity: 0.3; }
+  100% { transform: translateY(-70px) scale(0.5); opacity: 0;   }
+}
+.particle-rise {
+  animation: particle-float var(--dur, 4s) ease-in-out infinite var(--delay, 0s);
+  pointer-events: none;
+}
+
+/* Scan-light hero effect */
+@keyframes scan-light {
+  0%   { left: -40%; }
+  100% { left: 130%;  }
+}
+.scan-light {
+  position: absolute;
+  inset-y: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+  animation: scan-light 7s ease-in-out infinite 1s;
+  pointer-events: none;
+}
+
+/* Pulsing gold glow for trust icons */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0  0  0 rgba(199,154,60,0);    }
+  50%       { box-shadow: 0 0 22px 6px rgba(199,154,60,0.28); }
+}
+.glow-icon { animation: glow-pulse 3.2s ease-in-out infinite; }
+
+/* Cascading card rise (use with style animationDelay) */
+@keyframes card-cascade {
+  from { opacity: 0; transform: translateY(22px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+.card-cascade { animation: card-cascade 0.45s ease-out both; }
+
+/* Gold gradient border pulse for selected category */
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(199,154,60,0.4); }
+  50%       { border-color: rgba(216,183,106,0.8); }
+}
+.border-glow-active { animation: border-glow 2s ease-in-out infinite; }
+
+/* Slide-in reveal for section headings */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal-up { animation: reveal-up 0.6s ease-out both; }
+
+/* Gold divider shimmer */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(199,154,60,0.15) 20%,
+    rgba(216,183,106,0.55) 50%,
+    rgba(199,154,60,0.15) 80%, transparent 100%);
+}
+
+/* Lux product card — hover glow border (border-radius must match card-dark) */
+.lux-card {
+  border-radius: 18px;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.lux-card:hover {
+  box-shadow: 0 0 0 1px rgba(216,183,106,0.5),
+              0 20px 60px -20px rgba(0,0,0,0.9),
+              0 0 30px -10px rgba(199,154,60,0.2);
+  transform: translateY(-2px);
+}
+
+/* Trust badge section */
+.trust-section {
+  background: linear-gradient(180deg,
+    rgba(21,17,10,0) 0%,
+    rgba(21,17,10,0.6) 30%,
+    rgba(21,17,10,0.6) 70%,
+    rgba(21,17,10,0) 100%);
+}
+/* Sidebar glass box */
+.sidebar-glass {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(216,183,106,0.12);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+/* Products page header with depth */
+.products-header {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(199,154,60,0.18) 0%, transparent 60%),
+    linear-gradient(180deg, #15110a 0%, #0c0a07 80%, transparent 100%);
+}
+
+/* Marquee separator dot */
+.marquee-dot {
+  display: inline-block;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(199,154,60,0.5);
+  margin: 0 20px;
+  vertical-align: middle;
+}
