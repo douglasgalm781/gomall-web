@@ -78,7 +78,7 @@ export default function Footer() {
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Logo size={28} />
-              <span className="serif text-[18px] font-bold tracking-wide gold-text">GoMall</span>
+              <span className="serif text-[18px] font-bold text-ivory tracking-wide">Go<span className="gold-text">Mall</span></span>
             </Link>
             <p className="text-[13px] text-ivory/45 leading-relaxed max-w-[220px]">
               {t("footer.tagline")}

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import Icon from "@/components/Icon";
+import BackHeader from "@/components/BackHeader";
 
 const NOTIF_TITLE_KEYS = {
   "Order Completed":              "notif.orderCompleted",
@@ -70,35 +71,19 @@ export default function NotificationsPage() {
   return (
     <div className="luxe min-h-screen pb-10">
       {/* ── header ───────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 glass-dark border-b border-gold-400/15 h-14 flex items-center px-4 md:px-8 lg:px-12 justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="w-9 h-9 rounded-full gold-hairline bg-white/5 text-ivory flex items-center justify-center"
-          >
-            <Icon name="chevronLeft" size={20} />
-          </button>
-          <div>
-            <h1 className="serif text-[17px] font-semibold text-ivory tracking-wide leading-none">
-              {t("notifications.title")}
-            </h1>
-            {unreadCount > 0 && (
-              <p className="text-[11px] text-gold-300/70 mt-0.5">
-                {unreadCount} {t("notifications.unread")}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {unreadCount > 0 && (
+      <BackHeader
+        title={t("notifications.title")}
+        dark
+        subtitle={unreadCount > 0 ? `${unreadCount} ${t("notifications.unread")}` : null}
+        right={unreadCount > 0 ? (
           <button
             onClick={markAllRead}
             className="text-[12px] font-semibold text-gold-300 py-1.5 px-3 rounded-full gold-hairline bg-white/5"
           >
             {t("notifications.markAllRead")}
           </button>
-        )}
-      </div>
+        ) : null}
+      />
 
       {/* ── list ─────────────────────────────────────────────────────── */}
       {items.length === 0 ? (

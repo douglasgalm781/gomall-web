@@ -19,8 +19,13 @@ export default function ProfileSectionPage() {
   const [cartCount, setCartCount] = useState(0);
   const [shipCount, setShipCount] = useState(0);
 
-  // Validate slug — redirect unknown slugs to /profile
-  const validItem = NAV_ITEMS.find((s) => s.slug === section);
+  // Validate slug — redirect unknown slugs to /profile.
+  // "account" is a mobile-only route for the profile edit form (the overview
+  // section lives at /profile root on desktop, which is the hub on mobile).
+  const validItem = NAV_ITEMS.find((s) => s.slug === section)
+    || (section === "account"
+      ? { key: "overview", slug: "account", icon: "user", labelKey: "profile.menu.profile" }
+      : null);
   useEffect(() => {
     if (!validItem) router.replace("/profile");
   }, [validItem, router]);

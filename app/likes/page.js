@@ -8,6 +8,7 @@ import { useCurrency, fmtNative } from "@/lib/currency";
 import Icon from "@/components/Icon";
 import LuxImage from "@/components/LuxImage";
 import SaleBadge from "@/components/SaleBadge";
+import BackHeader from "@/components/BackHeader";
 
 export default function LikesPage() {
   const router  = useRouter();
@@ -35,20 +36,11 @@ export default function LikesPage() {
     <div className="luxe min-h-screen pb-24">
 
       {/* Header */}
-      <div className="sticky top-0 z-20 glass-dark border-b border-gold-400/15 h-14 flex items-center px-4 md:px-8 lg:px-12 gap-3">
-        <button
-          onClick={() => router.back()}
-          className="w-9 h-9 rounded-full gold-hairline bg-white/5 text-ivory flex items-center justify-center"
-        >
-          <Icon name="chevronLeft" size={20} />
-        </button>
-        <h1 className="serif text-[17px] font-semibold text-ivory tracking-wide leading-none">
-          {t("likes.title")}
-        </h1>
-        {items.length > 0 && (
-          <span className="ml-auto text-[12px] text-ivory/35">{items.length} items</span>
-        )}
-      </div>
+      <BackHeader
+        title={t("likes.title")}
+        dark
+        right={items.length > 0 ? <span className="text-[12px] text-ivory/35">{items.length} items</span> : null}
+      />
 
       {/* Content */}
       {loading ? (

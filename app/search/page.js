@@ -7,6 +7,7 @@ import { api, normalizeProduct } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency, fmtNative } from "@/lib/currency";
 import { useSession } from "@/lib/store";
+import { useTapReveal } from "@/lib/useTapReveal";
 import { useBuyNow } from "@/components/BuyNowProvider";
 import { useToast } from "@/components/Toast";
 import Icon from "@/components/Icon";
@@ -22,6 +23,7 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const inputRef = useRef(null);
   const session  = useSession();
+  const { onCardClick, actionCls } = useTapReveal();
   const buyNow   = useBuyNow();
   const toast    = useToast();
 
@@ -36,6 +38,32 @@ function SearchContent() {
   const [page,           setPage]           = useState(1);
   const [total,          setTotal]          = useState(0);
   const [addingIds,      setAddingIds]      = useState(new Set());
+  const [likedIds,       setLikedIds]       = useState(new Set());
+
+  // Fetch liked product IDs
+  useEffect(() => {
+    if (!session) { setLikedIds(new Set()); return; }
+    api.get("/likes").then((d) => {
+      setLikedIds(new Set((d.items || []).map((p) => p.id)));
+    }).catch(() => {});
+  }, [session]);
+
+  async function toggleLike(e, productId) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!session) return;
+    try {
+      const { liked } = await api.post(`/likes/${productId}`);
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        liked ? next.add(productId) : next.delete(productId);
+        return next;
+      });
+      toast.success(liked ? t("likes.added") : t("likes.removed"));
+    } catch {
+      toast.error(t("common.loadFailed"));
+    }
+  }
 
   async function addToCart(e, inventoryId) {
     e.preventDefault();
@@ -192,6 +220,7 @@ function SearchContent() {
                     <Link
                       key={`${p.id}-${p.inventoryId}`}
                       href={`/product/${p.id}?shopId=${p.shopId}`}
+                      onClick={onCardClick(`${p.id}-${p.inventoryId}`, !!session && (p.stock ?? 0) > 0)}
                       className="group block card-enter"
                       style={{ animationDelay: `${Math.min(i, 11) * 30}ms` }}
                     >
@@ -208,8 +237,27 @@ function SearchContent() {
 
                           <SaleBadge onSale={p.onSale} price={p.retail} originalPrice={p.originalPrice} size="sm" />
 
+                          {/* Wishlist */}
+                          {session && (
+                            <button
+                              onClick={(e) => toggleLike(e, p.id)}
+                              className={`absolute top-3 right-3 w-8 h-8 rounded-full glass-dark flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                                likedIds.has(p.id)
+                                  ? "text-red-400 opacity-100"
+                                  : "text-ivory/50 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                              }`}
+                            >
+                              <Icon
+                                name="heart"
+                                size={15}
+                                fill={likedIds.has(p.id) ? "currentColor" : "none"}
+                                strokeWidth={likedIds.has(p.id) ? 0 : 1.5}
+                              />
+                            </button>
+                          )}
+
                           {session && (p.stock ?? 0) > 0 && (
-                            <div className="absolute bottom-3 left-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                            <div className={`absolute bottom-3 left-3 right-3 flex flex-col gap-2 ${actionCls(`${p.id}-${p.inventoryId}`)}`}>
                               <button
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); buyNow(p); }}
                                 className="h-9 rounded-xl bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900 text-[12px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"

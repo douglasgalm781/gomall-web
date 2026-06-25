@@ -8,14 +8,14 @@ import { useI18n } from "@/lib/i18n";
 
 function StatCard({ label, value, icon, color }) {
   return (
-    <div className="card-dark p-5 flex items-center gap-4">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
-        <Icon name={icon} size={20} />
+    <div className="card-dark p-4 sm:p-5">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+          <Icon name={icon} size={18} />
+        </span>
+        <p className="text-[11px] sm:text-[12px] text-ivory/50 leading-tight">{label}</p>
       </div>
-      <div>
-        <p className="text-[12px] text-ivory/50 mb-0.5">{label}</p>
-        <p className="text-[20px] font-bold gold-text">{value}</p>
-      </div>
+      <p className="text-[19px] sm:text-[22px] font-bold gold-text leading-tight tracking-tight break-words">{value}</p>
     </div>
   );
 }
@@ -44,14 +44,14 @@ export default function MerchantDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="serif text-2xl font-bold text-ivory">{t("merchant.dashboard.title")}</h1>
-        <div className="flex gap-1 bg-white/5 rounded-xl p-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="serif text-xl sm:text-2xl font-bold text-ivory">{t("merchant.dashboard.title")}</h1>
+        <div className="flex gap-1 bg-white/5 rounded-xl p-1 self-start sm:self-auto">
           {PERIODS.map((p) => (
             <button
               key={p.key}
               onClick={() => setPeriod(p.key)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition ${
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition ${
                 period === p.key ? "bg-gold-400/20 text-gold-300" : "text-ivory/50 hover:text-ivory"
               }`}
             >
@@ -72,16 +72,19 @@ export default function MerchantDashboard() {
 
           {/* Daily chart (simple bar) */}
           {data?.daily?.length > 0 && (
-            <div className="card-dark p-5 space-y-3">
-              <h3 className="text-[13px] font-semibold text-ivory/70">{t("merchant.dashboard.dailyRevenue")}</h3>
-              <div className="flex items-end gap-1 h-24">
+            <div className="card-dark p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[13px] font-semibold text-ivory/70">{t("merchant.dashboard.dailyRevenue")}</h3>
+                <span className="text-[11px] font-semibold gold-text">{fmt(Math.max(...data.daily.map((d) => d.revenue), 0))}</span>
+              </div>
+              <div className="flex items-end gap-px sm:gap-[3px] h-28 border-b border-white/8 pb-px">
                 {(() => {
                   const max = Math.max(...data.daily.map((d) => d.revenue), 1);
                   return data.daily.map((d, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div key={i} className="flex-1 h-full flex items-end justify-center group">
                       <div
-                        className="w-full bg-gold-400/30 rounded-t-sm hover:bg-gold-400/60 transition relative group"
-                        style={{ height: `${Math.max((d.revenue / max) * 100, 2)}%` }}
+                        className="w-full max-w-[14px] rounded-t-[2px] bg-gradient-to-t from-gold-500/35 to-gold-300/70 hover:from-gold-500/70 hover:to-gold-300 transition-colors relative"
+                        style={{ height: d.revenue > 0 ? `${Math.max((d.revenue / max) * 100, 8)}%` : "2px" }}
                       >
                         <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#1a1510] border border-gold-400/30 rounded px-2 py-1 text-[10px] text-gold-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
                           {fmt(d.revenue)}
@@ -96,7 +99,7 @@ export default function MerchantDashboard() {
 
           {/* Top products */}
           {data?.topProducts?.length > 0 && (
-            <div className="card-dark p-5 space-y-3">
+            <div className="card-dark p-4 sm:p-5 space-y-3">
               <h3 className="text-[13px] font-semibold text-ivory/70">{t("merchant.dashboard.topProducts")}</h3>
               <div className="space-y-2">
                 {data.topProducts.map((p) => (
@@ -120,8 +123,8 @@ export default function MerchantDashboard() {
             <div className="card-dark p-8 text-center text-ivory/40">
               <Icon name="receipt" size={32} className="mx-auto mb-3 opacity-30" />
               <p className="text-[14px]">{t("merchant.dashboard.noOrders")}</p>
-              <Link href="/merchant/products" className="btn-primary inline-flex mt-4 px-6 h-10 text-[13px]">
-                {t("merchant.dashboard.addFirstProduct")}
+              <Link href="/merchant/products" className="btn-primary inline-flex items-center justify-center gap-2 mt-5 px-6 h-11 text-[13px] font-semibold rounded-xl">
+                <Icon name="plus" size={16} /> {t("merchant.dashboard.addFirstProduct")}
               </Link>
             </div>
           )}

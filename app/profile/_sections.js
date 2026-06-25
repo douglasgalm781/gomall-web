@@ -40,16 +40,16 @@ export const NAV_ITEMS = SIDEBAR.filter((s) => !s.type);
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared section wrapper
 // ─────────────────────────────────────────────────────────────────────────────
-export function SectionWrap({ title, icon, children }) {
+export function SectionWrap({ title, icon, children, narrow }) {
   return (
     <div className="px-6 lg:px-10 py-8 space-y-6">
-      <div className="flex items-center gap-3 pb-4 border-b border-gold-400/10">
+      <div className={`flex items-center gap-3 pb-4 border-b border-gold-400/10 ${narrow ? "max-w-2xl" : ""}`}>
         <div className="w-10 h-10 rounded-xl gold-hairline bg-gold-400/12 text-gold-300 flex items-center justify-center">
           <Icon name={icon} size={18} />
         </div>
         <h2 className="serif text-[22px] font-bold text-ivory">{title}</h2>
       </div>
-      {children}
+      {narrow ? <div className="max-w-2xl space-y-6">{children}</div> : children}
     </div>
   );
 }
@@ -115,7 +115,7 @@ export function OverviewSection({ session }) {
           <div className="w-8 h-8 border-2 border-gold-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="max-w-md mx-auto space-y-7">
+        <div className="max-w-md space-y-7">
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-gold-300 to-gold-600 flex items-center justify-center ring-2 ring-gold-400/25">
@@ -679,7 +679,7 @@ export function InviteSection() {
   };
 
   return (
-    <SectionWrap title={t("invite.title")} icon="users">
+    <SectionWrap title={t("invite.title")} icon="users" narrow>
       {!data ? <div className="text-center text-ivory/40 py-8">{t("common.loading")}</div> : (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
@@ -769,7 +769,7 @@ export function LanguageSection() {
 export function RechargeSection() {
   const { t } = useI18n();
   return (
-    <SectionWrap title={t("recharge.title")} icon="deposit">
+    <SectionWrap title={t("recharge.title")} icon="deposit" narrow>
       <RechargeContent />
     </SectionWrap>
   );
@@ -820,8 +820,8 @@ export function WithdrawSection() {
   };
 
   return (
-    <SectionWrap title={t("withdraw.title")} icon="withdraw">
-      <div className="max-w-md mx-auto space-y-4">
+    <SectionWrap title={t("withdraw.title")} icon="withdraw" narrow>
+      <div className="max-w-md space-y-4">
         {walletCodes.length > 1 && (
           <div>
             <p className="text-[11px] font-semibold text-ivory/35 uppercase tracking-widest mb-2">{t("withdraw.withdrawFrom") || "Withdraw From"}</p>
@@ -915,12 +915,22 @@ export function HistorySection() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading,     setLoading]     = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
+  function loadHistory({ silent = false } = {}) {
+    if (!silent) setLoading(true);
     Promise.all([
       api.get("/recharge").then((d) => setRecharges(d.items  || [])),
       api.get("/withdraw").then((d) => setWithdrawals(d.items || [])),
-    ]).catch(() => {}).finally(() => setLoading(false));
+    ]).catch(() => {}).finally(() => { if (!silent) setLoading(false); });
+  }
+
+  // Recharge/withdraw are approved by an admin elsewhere, so keep this view live:
+  // poll every 20s + refetch on focus, and refresh the wallet balance too.
+  useEffect(() => {
+    loadHistory();
+    const tick = () => { loadHistory({ silent: true }); refreshSession().catch(() => {}); };
+    const id = setInterval(tick, 20000);
+    window.addEventListener("focus", tick);
+    return () => { clearInterval(id); window.removeEventListener("focus", tick); };
   }, []);
 
   const allItems = [
@@ -939,7 +949,7 @@ export function HistorySection() {
   withdrawals.filter((r) => r.status === "completed").forEach((r) => { const code = r.currency || 'USD'; totalOutByCurrency[code] = (totalOutByCurrency[code] || 0) + r.amount; });
 
   return (
-    <SectionWrap title={t("records.historyTitle")} icon="receipt">
+    <SectionWrap title={t("records.historyTitle")} icon="receipt" narrow>
       <div className="card-dark p-5 grid grid-cols-2 divide-x divide-gold-400/12">
         <div className="pr-5">
           <p className="text-[11px] text-ivory/40 uppercase tracking-widest mb-1">{t("records.totalIn")}</p>
@@ -956,21 +966,25 @@ export function HistorySection() {
           }
         </div>
       </div>
-      <div className="flex gap-2">
-        {[{ key: "all", label: t("records.all"), icon: null }, { key: "recharge", label: t("records.rechargeTitle"), icon: "deposit" }, { key: "withdrawal", label: t("records.withdrawTitle"), icon: "withdraw" }].map((tab) => (
-          <button key={tab.key} onClick={() => { setKind(tab.key); setPage(1); }}
-            className={`flex-1 h-8 rounded-xl text-[12px] font-semibold flex items-center justify-center gap-1.5 transition ${kind === tab.key ? "bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900" : "gold-hairline bg-white/5 text-ivory/60 hover:text-ivory"}`}>
-            {tab.icon && <Icon name={tab.icon} size={13} />}{tab.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        {["all", "completed", "reviewing"].map((s) => (
-          <button key={s} onClick={() => { setStatus(s); setPage(1); }}
-            className={`h-8 px-4 rounded-full text-[12px] font-semibold transition ${status === s ? "bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900" : "gold-hairline bg-white/5 text-ivory/60 hover:text-ivory"}`}>
-            {t(`records.${s}`)}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Type — compact segmented control */}
+        <div className="inline-flex p-1 rounded-xl gold-hairline bg-white/5 gap-1">
+          {[{ key: "all", label: t("records.all"), icon: null }, { key: "recharge", label: t("records.rechargeTitle"), icon: "deposit" }, { key: "withdrawal", label: t("records.withdrawTitle"), icon: "withdraw" }].map((tab) => (
+            <button key={tab.key} onClick={() => { setKind(tab.key); setPage(1); }}
+              className={`h-8 px-3.5 rounded-lg text-[12px] font-semibold flex items-center justify-center gap-1.5 transition ${kind === tab.key ? "bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900 shadow-sm" : "text-ivory/55 hover:text-ivory"}`}>
+              {tab.icon && <Icon name={tab.icon} size={13} />}{tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Status — ghost pills */}
+        <div className="flex gap-1.5">
+          {["all", "completed", "reviewing"].map((s) => (
+            <button key={s} onClick={() => { setStatus(s); setPage(1); }}
+              className={`h-8 px-3.5 rounded-full text-[12px] font-semibold transition ${status === s ? "bg-gold-400/15 text-gold-300 gold-hairline" : "text-ivory/45 hover:text-ivory/80"}`}>
+              {t(`records.${s}`)}
+            </button>
+          ))}
+        </div>
       </div>
       {loading ? (
         <div className="text-center text-ivory/40 py-8">{t("common.loading")}</div>
@@ -1090,7 +1104,7 @@ export function KycSection({ session }) {
 
   if (kycStatus === "pending") {
     return (
-      <SectionWrap title={t("kyc.title")} icon="idCard">
+      <SectionWrap title={t("kyc.title")} icon="idCard" narrow>
         <div className="card-dark p-5 flex flex-col items-center text-center">
           <span className="pill pill-warning text-[12px] mb-3">{t("kyc.statusPending")}</span>
           <h3 className="serif text-[16px] font-semibold text-ivory">{t("kyc.pendingTitle")}</h3>
@@ -1131,8 +1145,8 @@ export function KycSection({ session }) {
 
   if (kycStatus === "verified") {
     return (
-      <SectionWrap title={t("kyc.title")} icon="idCard">
-        <div className="card-dark px-6 py-10 flex flex-col items-center text-center gap-4">
+      <SectionWrap title={t("kyc.title")} icon="idCard" narrow>
+        <div className="card-dark max-w-sm px-6 py-9 flex flex-col items-center text-center gap-4">
           <div className="relative">
             <div className="w-16 h-16 rounded-full bg-emerald-500/12 border border-emerald-400/25 flex items-center justify-center">
               <Icon name="shieldCheck" size={28} className="text-emerald-400" />
@@ -1143,7 +1157,7 @@ export function KycSection({ session }) {
           </div>
           <div className="space-y-1">
             <p className="text-[18px] font-bold text-ivory serif">Identity Verified</p>
-            <p className="text-[13px] text-ivory/50 max-w-xs leading-relaxed">{t("kyc.verifiedDesc")}</p>
+            <p className="text-[13px] text-ivory/50 leading-relaxed">{t("kyc.verifiedDesc")}</p>
           </div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-emerald-400 text-[12px] font-semibold">
             <Icon name="shieldCheck" size={12} /> {t("kyc.statusVerified")}
@@ -1155,7 +1169,7 @@ export function KycSection({ session }) {
 
   // None / rejected — show form
   return (
-    <SectionWrap title={t("kyc.title")} icon="idCard">
+    <SectionWrap title={t("kyc.title")} icon="idCard" narrow>
       <div className="card-dark px-4 py-3 flex items-center gap-3">
         <Icon name="idCard" size={18} className="text-gold-300 shrink-0" />
         <p className="text-[12px] text-ivory/60">{t("kyc.subtitle")}</p>
@@ -1363,7 +1377,7 @@ export function MyShopSection({ session }) {
   // Not KYC verified
   if (kycStatus !== "verified") {
     return (
-      <SectionWrap title={t("shopApp.title")} icon="store">
+      <SectionWrap title={t("shopApp.title")} icon="store" narrow>
         <div className="card-dark px-6 py-10 flex flex-col items-center text-center gap-4">
           <div className="w-14 h-14 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center">
             <Icon name="idCard" size={24} className="text-gold-300" />
@@ -1383,7 +1397,7 @@ export function MyShopSection({ session }) {
   // Shop pending
   if (shopStatus === "pending") {
     return (
-      <SectionWrap title={t("shopApp.title")} icon="store">
+      <SectionWrap title={t("shopApp.title")} icon="store" narrow>
         <div className="card-dark px-6 py-10 flex flex-col items-center text-center gap-4">
           <div className="w-14 h-14 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center">
             {shopData?.logoUrl ? (
@@ -1410,7 +1424,7 @@ export function MyShopSection({ session }) {
   if (shopStatus === "suspended") {
     const logoRequired = !logoFile && !shopData?.logoUrl;
     return (
-      <SectionWrap title={t("shopApp.title")} icon="store">
+      <SectionWrap title={t("shopApp.title")} icon="store" narrow>
         <div className="max-w-[460px] space-y-4">
           {/* Suspension notice */}
           <div className="rounded-xl border border-rose-400/20 bg-rose-500/8 px-4 py-3 flex gap-3">
@@ -1510,7 +1524,7 @@ export function MyShopSection({ session }) {
   // Shop rejected
   if (shopStatus === "rejected") {
     return (
-      <SectionWrap title={t("shopApp.title")} icon="store">
+      <SectionWrap title={t("shopApp.title")} icon="store" narrow>
         <div className="card-dark px-6 py-8 flex flex-col items-center text-center gap-3">
           <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-400/25 flex items-center justify-center">
             <Icon name="close" size={22} className="text-rose-400" />
@@ -1533,11 +1547,11 @@ export function MyShopSection({ session }) {
   // Shop active — merchant dashboard shortcut
   if (shopStatus === "active" && session?.isMerchant) {
     return (
-      <SectionWrap title={t("shopApp.title")} icon="store">
+      <SectionWrap title={t("shopApp.title")} icon="store" narrow>
         <div className="card-dark overflow-hidden">
-          <div className="flex items-stretch">
-            {/* Logo — prominent 4:3 panel */}
-            <div className="w-[176px] shrink-0" style={{ aspectRatio: "4/3" }}>
+          <div className="flex flex-col lg:flex-row lg:items-stretch">
+            {/* Logo — full-width banner on mobile, 4:3 side panel on desktop */}
+            <div className="relative w-full aspect-[16/9] lg:w-[176px] lg:aspect-[4/3] shrink-0">
               {shopData?.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={fileUrl(shopData.logoUrl)} alt={shopData.name} className="w-full h-full object-cover block" />
@@ -1546,16 +1560,26 @@ export function MyShopSection({ session }) {
                   <Icon name="store" size={40} className="text-gold-300/35" />
                 </div>
               )}
+              {/* Mobile overlay: gradient + status badge + name over the banner */}
+              <div className="lg:hidden absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+              <span className="lg:hidden absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 backdrop-blur-sm border border-emerald-400/30 text-emerald-200 text-[11px] font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {t("shopApp.active")}
+              </span>
+              <div className="lg:hidden absolute inset-x-0 bottom-0 p-4">
+                <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-gold-300/70 mb-0.5">{t("shopApp.yourStore")}</p>
+                <p className="serif text-[22px] font-bold text-ivory leading-tight drop-shadow">{shopData?.name}</p>
+              </div>
             </div>
 
-            {/* Vertical divider */}
-            <div className="w-px bg-white/8 shrink-0" />
+            {/* Vertical divider — desktop only */}
+            <div className="hidden lg:block w-px bg-white/8 shrink-0" />
 
             {/* Info + actions */}
             <div className="flex-1 min-w-0 flex flex-col">
-              {/* Shop identity */}
-              <div className="flex-1 px-6 py-5">
-                <div className="flex items-start justify-between gap-4 mb-3">
+              {/* Shop identity — desktop header (mobile shows name over the banner) */}
+              <div className="px-5 pt-4 pb-3 lg:flex-1 lg:px-6 lg:py-5">
+                <div className="hidden lg:flex items-start justify-between gap-4 mb-3">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-gold-300/45 mb-1">{t("shopApp.yourStore")}</p>
                     <p className="serif text-[22px] font-bold text-ivory leading-tight">{shopData?.name}</p>
@@ -1573,20 +1597,22 @@ export function MyShopSection({ session }) {
               </div>
 
               {/* Action bar */}
-              <div className="border-t border-white/8 px-6 py-3 flex items-center gap-2 flex-wrap">
-                <Link href="/merchant" className="btn-primary h-9 px-5 text-[12px] inline-flex items-center gap-1.5 font-semibold shrink-0">
-                  <Icon name="store" size={13} /> {t("shopApp.manageStore")}
+              <div className="border-t border-white/8 px-5 py-4 space-y-2.5 lg:px-6 lg:py-3 lg:flex lg:items-center lg:gap-2 lg:space-y-0 lg:flex-wrap">
+                <Link href="/merchant" className="btn-primary w-full lg:w-auto h-11 lg:h-9 px-5 text-[13px] lg:text-[12px] inline-flex items-center justify-center gap-1.5 font-semibold shrink-0">
+                  <Icon name="store" size={14} /> {t("shopApp.manageStore")}
                 </Link>
-                <div className="flex-1" />
-                <Link href="/merchant/products" className="h-9 px-3.5 rounded-xl text-ivory/55 bg-white/4 border border-white/8 hover:bg-white/10 hover:text-ivory/90 transition flex items-center gap-1.5 text-[12px] shrink-0">
-                  <Icon name="barChart" size={13} /> {t("merchant.nav.products")}
-                </Link>
-                <Link href="/merchant/shipping" className="h-9 px-3.5 rounded-xl text-ivory/55 bg-white/4 border border-white/8 hover:bg-white/10 hover:text-ivory/90 transition flex items-center gap-1.5 text-[12px] shrink-0">
-                  <Icon name="truck" size={13} /> {t("shopApp.ordersLink")}
-                </Link>
-                <Link href="/merchant/shop" className="h-9 px-3.5 rounded-xl text-ivory/55 bg-white/4 border border-white/8 hover:bg-white/10 hover:text-ivory/90 transition flex items-center gap-1.5 text-[12px] shrink-0">
-                  <Icon name="settings" size={13} /> {t("shopApp.settingsLink")}
-                </Link>
+                <div className="hidden lg:block flex-1" />
+                <div className="grid grid-cols-3 gap-2 lg:flex lg:gap-2">
+                  <Link href="/merchant/products" className="h-10 lg:h-9 px-2 lg:px-3.5 rounded-xl text-ivory/60 bg-white/4 border border-white/8 hover:bg-white/10 hover:text-ivory/90 transition flex items-center justify-center gap-1.5 text-[12px] shrink-0">
+                    <Icon name="barChart" size={14} /> {t("merchant.nav.products")}
+                  </Link>
+                  <Link href="/merchant/shipping" className="h-10 lg:h-9 px-2 lg:px-3.5 rounded-xl text-ivory/60 bg-white/4 border border-white/8 hover:bg-white/10 hover:text-ivory/90 transition flex items-center justify-center gap-1.5 text-[12px] shrink-0">
+                    <Icon name="truck" size={14} /> {t("shopApp.ordersLink")}
+                  </Link>
+                  <Link href="/merchant/shop" className="h-10 lg:h-9 px-2 lg:px-3.5 rounded-xl text-ivory/60 bg-white/4 border border-white/8 hover:bg-white/10 hover:text-ivory/90 transition flex items-center justify-center gap-1.5 text-[12px] shrink-0">
+                    <Icon name="settings" size={14} /> {t("shopApp.settingsLink")}
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -1597,7 +1623,7 @@ export function MyShopSection({ session }) {
 
   // No shop yet — application form
   return (
-    <SectionWrap title={t("shopApp.title")} icon="store">
+    <SectionWrap title={t("shopApp.title")} icon="store" narrow>
       <div className="card-dark px-4 py-3 flex items-center gap-3">
         <Icon name="store" size={16} className="text-gold-300 shrink-0" />
         <p className="text-[12px] text-ivory/55">{t("shopApp.fillDetails")}</p>

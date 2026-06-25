@@ -17,15 +17,17 @@ export default function LoginPage() {
   const toast = useToast();
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
+  const [goMerchant, setGoMerchant] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = async () => {
+  const submit = async (e) => {
+    e?.preventDefault();
     if (!account.trim()) return toast.warning(t("login.enterAccount"));
     if (!password) return toast.warning(t("login.enterPassword"));
     setSubmitting(true);
     try {
       const user = await login(account.trim(), password);
-      if (user?.is_merchant) router.push("/merchant");
+      if (goMerchant && user?.isMerchant) router.push("/merchant");
       else router.push("/");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : t("common.loadFailed"));
@@ -58,7 +60,7 @@ export default function LoginPage() {
       </div>
 
       {/* form */}
-      <div className="relative z-10 px-6 pb-10 space-y-4 w-full md:max-w-md md:mx-auto lg:flex-1 lg:flex lg:flex-col lg:justify-center">
+      <form onSubmit={submit} className="relative z-10 px-6 pb-10 space-y-4 w-full md:max-w-md md:mx-auto lg:flex-1 lg:flex lg:flex-col lg:justify-center">
         <input
           value={account}
           onChange={(e) => setAccount(e.target.value)}
@@ -72,8 +74,17 @@ export default function LoginPage() {
           placeholder={t("common.password")}
           className="field-dark"
         />
+        <label className="flex items-center gap-2.5 cursor-pointer select-none px-1">
+          <input
+            type="checkbox"
+            checked={goMerchant}
+            onChange={(e) => setGoMerchant(e.target.checked)}
+            className="w-4 h-4 rounded accent-emerald-400 cursor-pointer"
+          />
+          <span className="text-ivory/70 text-[13px]">Go to merchant management after login</span>
+        </label>
         <button
-          onClick={submit}
+          type="submit"
           disabled={submitting}
           className="btn-primary w-full h-[54px] text-[15px] tracking-wide disabled:opacity-60"
         >
@@ -83,12 +94,7 @@ export default function LoginPage() {
           <span className="text-ivory/50 text-[13px]">{t("login.noAccount")} </span>
           <Link href="/register" className="text-gold-300 text-[13px] font-semibold">{t("login.register")}</Link>
         </div>
-        <div className="text-center">
-          <Link href="/merchant" className="text-[12px] text-emerald-300/70 hover:text-emerald-300 flex items-center justify-center gap-1.5 transition">
-            <span>Manage my store →</span>
-          </Link>
-        </div>
-      </div>
+      </form>
     </div>
   );
 }

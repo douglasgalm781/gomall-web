@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api, ApiError, fileUrl } from "@/lib/api";
 import Icon from "@/components/Icon";
-import ImageCropUploader from "@/components/ImageCropUploader";
+import ImageCropUploader, { Cropper } from "@/components/ImageCropUploader";
 import { useToast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
 
-const CURRENCIES = ["CNY","USD","VND","MYR","THB","SGD"];
+const CURRENCIES = ["CNY","USD","VND","MYR","THB","SGD","USDT-TRC20","USDT-ERC20"];
 
 const STATUS_PILL = {
   approved: "pill-success",
@@ -30,8 +31,14 @@ function fromInputDateTime(v) {
 }
 
 function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+  // Portal to <body> so the backdrop covers the full viewport (escapes the
+  // app's `relative z-10` stacking context / any ancestor containing block).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="card-dark w-full sm:max-w-xl max-h-[92vh] overflow-y-auto rounded-2xl chat-scrollbar">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gold-400/10">
           <h3 className="serif text-[17px] font-bold text-ivory">{title}</h3>
@@ -41,7 +48,8 @@ function Modal({ title, onClose, children }) {
         </div>
         <div className="p-5 space-y-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -75,17 +83,26 @@ export default function MerchantProducts() {
   // Sub-image state: existing URLs + new File/Blob objects
   const [keepSubs,  setKeepSubs]  = useState([]); // existing /uploads/... URLs to keep
   const [newSubs,   setNewSubs]   = useState([]); // { blob, preview } objects for new uploads
+  const [subCropFile, setSubCropFile] = useState(null); // sub-image awaiting crop
 
-  function load() {
-    setLoading(true);
+  function load({ silent = false } = {}) {
+    if (!silent) setLoading(true);
     const qs = filter !== "all" ? `?approvalStatus=${filter}` : "";
     api.get(`/merchant/products${qs}`)
       .then((d) => setProducts(d.items || []))
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }
 
   useEffect(() => { load(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Approval status is changed by an admin elsewhere, so silently refetch when
+  // the merchant returns to the tab to pick up approved/rejected changes.
+  useEffect(() => {
+    const onFocus = () => load({ silent: true });
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     api.get("/config/categories").then((d) => setCategories(d.items || [])).catch(() => {});
@@ -123,16 +140,17 @@ export default function MerchantProducts() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Pick a single sub-image, then send it through the same crop/fit dialog.
   function handleSubFile(e) {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     e.target.value = "";
-    const remaining = 6 - keepSubs.length - newSubs.length;
-    const toAdd = files.slice(0, remaining);
-    toAdd.forEach((file) => {
-      const preview = URL.createObjectURL(file);
-      setNewSubs((prev) => [...prev, { blob: file, preview }]);
-    });
+    setSubCropFile(file);
+  }
+
+  function addCroppedSub(blob, preview) {
+    setSubCropFile(null);
+    setNewSubs((prev) => [...prev, { blob, preview }]);
   }
 
   function removeKeepSub(url) {
@@ -227,7 +245,13 @@ export default function MerchantProducts() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="serif text-2xl font-bold text-ivory">{t("merchant.products.title")}</h1>
+        <div className="flex items-center gap-2.5">
+          <h1 className="serif text-2xl font-bold text-ivory">{t("merchant.products.title")}</h1>
+          <button onClick={() => load()} disabled={loading} title={t("common.refresh")}
+            className="w-9 h-9 rounded-full gold-hairline bg-white/5 text-gold-300 flex items-center justify-center hover:bg-white/10 transition disabled:opacity-50">
+            <Icon name="refresh" size={16} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
         <button onClick={openCreate} className="btn-primary flex items-center gap-2 px-4 h-10 text-[13px]">
           <Icon name="plus" size={15} /> {t("merchant.products.addProduct")}
         </button>
@@ -317,8 +341,8 @@ export default function MerchantProducts() {
         </div>
       )}
 
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {deleteConfirm && createPortal((
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)} />
           <div className="relative card-dark w-full max-w-sm rounded-2xl p-6 space-y-4">
             <div className="flex items-start gap-3">
@@ -348,7 +372,7 @@ export default function MerchantProducts() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {modal && (
         <Modal
@@ -407,7 +431,7 @@ export default function MerchantProducts() {
               {/* Add sub-image slot */}
               {totalSubs < 6 && (
                 <div className="w-[90px] aspect-[4/5]">
-                  <input ref={subRef} type="file" accept="image/*" multiple onChange={handleSubFile} className="hidden" />
+                  <input ref={subRef} type="file" accept="image/*" onChange={handleSubFile} className="hidden" />
                   <button
                     type="button"
                     onClick={() => subRef.current?.click()}
@@ -444,7 +468,7 @@ export default function MerchantProducts() {
             </Field>
             <Field label={t("merchant.products.currency")}>
               <select value={form.currency} onChange={set("currency")} className="field-dark">
-                {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                {CURRENCIES.map((c) => <option key={c} value={c}>{c.replace("USDT-", "USDT/")}</option>)}
               </select>
             </Field>
             <Field label={t("merchant.products.stock")}>
@@ -456,7 +480,7 @@ export default function MerchantProducts() {
             </Field>
           </div>
           <Field label={t("merchant.products.description")}>
-            <textarea value={form.description} onChange={set("description")} placeholder={t("merchant.products.descriptionPlaceholder")} rows={6} className="field-dark resize-none" />
+            <textarea value={form.description} onChange={set("description")} placeholder={t("merchant.products.descriptionPlaceholder")} rows={5} className="field-dark resize-none !h-auto min-h-[120px] !py-3 leading-relaxed" />
           </Field>
 
           <div className="pt-2 border-t border-gold-400/10 space-y-3">
@@ -498,6 +522,17 @@ export default function MerchantProducts() {
           <button onClick={handleSave} disabled={saving} className="btn-primary w-full h-12 text-[14px] disabled:opacity-60">
             {saving ? t("common.saving") : modal.mode === "create" ? t("merchant.products.submitForApproval") : t("merchant.shop.saveChanges")}
           </button>
+
+          {/* Sub-image crop/fit dialog */}
+          {subCropFile && (
+            <Cropper
+              file={subCropFile}
+              aspect={4 / 5}
+              maxWidth={1000}
+              onCropped={addCroppedSub}
+              onCancel={() => setSubCropFile(null)}
+            />
+          )}
         </Modal>
       )}
     </div>

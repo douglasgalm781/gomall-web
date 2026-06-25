@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useSession, logout } from "@/lib/store";
+import { useSession, logout, refreshSession } from "@/lib/store";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
@@ -47,6 +47,14 @@ export default function TopNav() {
     api.get("/cart").then((d) => setCartCount((d.items || []).length)).catch(() => {});
     api.get("/notifications").then((d) => setNotifCount(d.unread || 0)).catch(() => {});
   }, [session]);
+
+  // Refresh the wallet balance / profile when returning to the tab, so an
+  // admin-approved recharge/withdraw reflects without a manual reload.
+  useEffect(() => {
+    const onFocus = () => { refreshSession().catch(() => {}); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Sync search box with the URL's ?q= when navigating between pages
   useEffect(() => {

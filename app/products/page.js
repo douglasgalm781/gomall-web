@@ -7,10 +7,12 @@ import { api, normalizeProduct } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency, fmtNative } from "@/lib/currency";
 import { useSession } from "@/lib/store";
+import { useTapReveal } from "@/lib/useTapReveal";
 import { useToast } from "@/components/Toast";
 import { useBuyNow } from "@/components/BuyNowProvider";
 import Icon from "@/components/Icon";
 import LuxImage from "@/components/LuxImage";
+import MobileHeader from "@/components/MobileHeader";
 import Pagination from "@/components/Pagination";
 import SaleBadge from "@/components/SaleBadge";
 
@@ -46,6 +48,7 @@ function ProductsContent() {
   const { t, lang }  = useI18n();
   const { currency } = useCurrency();
   const session      = useSession();
+  const { onCardClick, actionCls } = useTapReveal();
   const searchRef    = useRef(null);
   const sortRef      = useRef(null);
   const toast        = useToast();
@@ -152,7 +155,10 @@ function ProductsContent() {
         liked ? next.add(productId) : next.delete(productId);
         return next;
       });
-    } catch {}
+      toast.success(liked ? t("likes.added") : t("likes.removed"));
+    } catch {
+      toast.error(t("common.loadFailed"));
+    }
   }
 
   // Key is inventoryId — each (product, shop) listing is tracked independently
@@ -208,6 +214,7 @@ function ProductsContent() {
 
   return (
     <div className="luxe min-h-screen pb-16">
+      <MobileHeader />
 
       {/* ── Products header — full viewport width ───────────────── */}
       <div className="products-header relative overflow-hidden">
@@ -487,6 +494,7 @@ function ProductsContent() {
                         <Link
                           key={`${p.id}-${p.inventoryId}`}
                           href={`/product/${p.id}?shopId=${p.shopId}`}
+                          onClick={onCardClick(`${p.id}-${p.inventoryId}`, !!session && (p.stock ?? 0) > 0)}
                           className="group block lux-card card-cascade"
                           style={{ animationDelay: `${Math.min(i, 11) * 35}ms` }}
                         >
@@ -524,7 +532,7 @@ function ProductsContent() {
 
                               {/* Buy directly + Add to Cart — both use inventoryId so the correct shop's stock is reserved */}
                               {session && (p.stock ?? 0) > 0 && (
-                                <div className="absolute bottom-3 left-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                                <div className={`absolute bottom-3 left-3 right-3 flex flex-col gap-2 ${actionCls(`${p.id}-${p.inventoryId}`)}`}>
                                   <button
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); buyNow(p); }}
                                     className="h-9 rounded-xl bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900 text-[12px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"

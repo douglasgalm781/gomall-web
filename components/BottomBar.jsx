@@ -7,7 +7,9 @@ import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import Icon from "./Icon";
 
-const NO_BOTTOMBAR_PATHS = ["/service/chat", "/shipping/"];
+// /merchant has its own bottom nav (Dashboard/Products/My Shop/Shipping), so the
+// global member bottom bar is suppressed there to avoid two overlapping nav bars.
+const NO_BOTTOMBAR_PATHS = ["/service/chat", "/shipping/", "/merchant"];
 
 export default function BottomBar() {
   const { t } = useI18n();
@@ -42,11 +44,8 @@ export default function BottomBar() {
 
   if (NO_BOTTOMBAR_PATHS.some((p) => pathname?.startsWith(p))) return null;
 
-  // Merchant mode: replace last tab with "My Store" when on /merchant pages
-  const isMerchant = !!session?.isMerchant;
-  const tabs = isMerchant
-    ? [...TABS.slice(0, 4), { href: "/merchant", icon: "store", label: t("nav.myStore"), match: (p) => p.startsWith("/merchant") }]
-    : TABS;
+  // The last tab is always Profile (merchants reach their store via Profile → My Shop).
+  const tabs = TABS;
 
   return (
     <div

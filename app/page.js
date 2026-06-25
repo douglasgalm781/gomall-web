@@ -15,6 +15,7 @@ import { api, normalizeProduct, fileUrl } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency, fmtNative } from "@/lib/currency";
 import { useSession } from "@/lib/store";
+import { useTapReveal } from "@/lib/useTapReveal";
 import Icon from "@/components/Icon";
 import Logo from "@/components/Logo";
 import LuxImage from "@/components/LuxImage";
@@ -55,6 +56,8 @@ export default function HomePage() {
   const [addingIds, setAddingIds] = useState(new Set());
   const [homeCfg,   setHomeCfg]   = useState(null);
   const [shops,     setShops]     = useState([]);
+  const [heroIdx,   setHeroIdx]   = useState(0);
+  const { onCardClick, actionCls } = useTapReveal();
 
   useEffect(() => {
     api.get("/config/home").then(setHomeCfg).catch(() => {});
@@ -76,11 +79,25 @@ export default function HomePage() {
 
   useEffect(() => {
     const params = new URLSearchParams({ currency: currency.code, pageSize: "10", sale: "1", sort: "discountDesc" });
+    if (cat !== "all") params.set("category", cat);
     if (lang === "zh") params.set("lang", "zh");
     api.get(`/listings?${params.toString()}`)
       .then((data) => setSaleProducts((data.items || []).map(normalizeProduct)))
       .catch(() => {});
-  }, [currency.code, lang]);
+  }, [currency.code, lang, cat]);
+
+  // Hero slides: the configured hero image followed by a few sale-product shots.
+  const heroSlides = [...new Set(
+    [homeCfg?.heroImage || HERO_MODEL, ...saleProducts.map((p) => p.image)].filter(Boolean)
+  )].slice(0, 6);
+  const slideIdx = heroSlides.length ? heroIdx % heroSlides.length : 0;
+
+  // Auto-advance the hero carousel.
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    const id = setInterval(() => setHeroIdx((i) => (i + 1) % heroSlides.length), 5000);
+    return () => clearInterval(id);
+  }, [heroSlides.length]);
 
   async function toggleLike(e, productId) {
     e.preventDefault();
@@ -93,7 +110,10 @@ export default function HomePage() {
         liked ? next.add(productId) : next.delete(productId);
         return next;
       });
-    } catch {}
+      toast.success(liked ? t("likes.added") : t("likes.removed"));
+    } catch {
+      toast.error(t("common.loadFailed"));
+    }
   }
 
   async function addToCart(e, productId) {
@@ -176,14 +196,16 @@ export default function HomePage() {
 
         {/* ── Hero banner ──────────────────────────────────────────────── */}
         <div className="px-4 md:px-8 lg:px-12 pt-3">
-          <div className="relative rounded-2xl overflow-hidden shadow-lux gold-hairline">
-            {/* Background image */}
-            <LuxImage
-              src={homeCfg?.heroImage || HERO_MODEL}
-              alt=""
-              className="aspect-[4/5] lg:aspect-auto lg:h-[50vh]"
-              label="GOMALL"
-            />
+          <div className="group relative rounded-2xl overflow-hidden shadow-lux gold-hairline aspect-[4/5] lg:aspect-auto lg:h-[50vh]">
+            {/* Background image carousel — cross-fades between slides */}
+            {heroSlides.map((src, i) => (
+              <div
+                key={i}
+                className={`absolute inset-0 transition-opacity duration-[900ms] ease-out ${i === slideIdx ? "opacity-100" : "opacity-0"}`}
+              >
+                <LuxImage src={src} alt="" className="w-full h-full" label="GOMALL" />
+              </div>
+            ))}
 
             {/* Cinematic gradient overlays */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-black/10" />
@@ -236,6 +258,42 @@ export default function HomePage() {
 
             {/* Bottom fade edge */}
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0c0a07] to-transparent" />
+
+            {/* Prev / Next — shown on hover */}
+            {heroSlides.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous slide"
+                  onClick={() => setHeroIdx((i) => (i - 1 + heroSlides.length) % heroSlides.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full glass-dark gold-hairline text-ivory/80 hover:text-gold-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                >
+                  <Icon name="chevronLeft" size={20} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next slide"
+                  onClick={() => setHeroIdx((i) => (i + 1) % heroSlides.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full glass-dark gold-hairline text-ivory/80 hover:text-gold-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                >
+                  <Icon name="chevronRight" size={20} />
+                </button>
+              </>
+            )}
+
+            {/* Carousel dots */}
+            {heroSlides.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                {heroSlides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setHeroIdx(i)}
+                    aria-label={`Slide ${i + 1}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === slideIdx ? "w-6 bg-gold-300" : "w-1.5 bg-white/40 hover:bg-white/70"}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -320,6 +378,7 @@ export default function HomePage() {
                 <Link
                   key={p.id}
                   href={`/product/${p.id}`}
+                  onClick={onCardClick(p.id, (p.stock ?? 0) > 0)}
                   className="group shrink-0 w-[150px] sm:w-[180px] lux-card card-cascade"
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
@@ -332,7 +391,42 @@ export default function HomePage() {
                         label={p.brand}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none" />
+                      {/* Gold shimmer line on hover */}
+                      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-gold-400/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
                       <SaleBadge onSale={p.onSale} price={p.retail} originalPrice={p.originalPrice} />
+
+                      {/* Wishlist */}
+                      <button
+                        onClick={(e) => toggleLike(e, p.id)}
+                        className={`absolute top-2 right-2 w-7 h-7 rounded-full glass-dark flex items-center justify-center transition-all active:scale-90 ${
+                          likedIds.has(p.id) ? "text-red-400 opacity-100" : "text-ivory/50 opacity-0 group-hover:opacity-100 hover:text-red-400"
+                        }`}
+                      >
+                        <Icon name="heart" size={14} fill={likedIds.has(p.id) ? "currentColor" : "none"} strokeWidth={likedIds.has(p.id) ? 0 : 1.5} />
+                      </button>
+
+                      {/* Buy now + Add to cart */}
+                      {(p.stock ?? 0) > 0 && (
+                        <div className={`absolute bottom-2 left-2 right-2 flex flex-col gap-1.5 ${actionCls(p.id)}`}>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); buyNow(p); }}
+                            className="h-8 rounded-lg bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900 text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-gold"
+                          >
+                            <Icon name="zap" size={13} /> {t("buy.buyNow")}
+                          </button>
+                          <button
+                            onClick={(e) => addToCart(e, p.id)}
+                            disabled={addingIds.has(p.id)}
+                            className="h-8 rounded-lg glass-dark gold-hairline text-gold-200 text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-60 hover:text-gold-100 transition"
+                          >
+                            {addingIds.has(p.id)
+                              ? <><div className="w-3 h-3 border-2 border-gold-200/30 border-t-gold-200 rounded-full animate-spin" /> {t("products.adding")}</>
+                              : <><Icon name="bag" size={13} /> {t("product.addToCart")}</>
+                            }
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="p-3">
                       <div className="text-gold-300/75 text-[9px] tracking-[0.22em] uppercase truncate mb-0.5">{p.brand}</div>
@@ -394,6 +488,7 @@ export default function HomePage() {
                 <Link
                   key={p.id}
                   href={`/product/${p.id}`}
+                  onClick={onCardClick(p.id, (p.stock ?? 0) > 0)}
                   className="group lux-card card-cascade"
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
@@ -424,7 +519,7 @@ export default function HomePage() {
 
                       {/* Buy now + Add to cart */}
                       {(p.stock ?? 0) > 0 && (
-                        <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                        <div className={`absolute bottom-2 left-2 right-2 flex flex-col gap-1.5 ${actionCls(p.id)}`}>
                           <button
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); buyNow(p); }}
                             className="h-8 rounded-lg bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900 text-[11px] font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-gold"

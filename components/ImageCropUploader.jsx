@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
 
-function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
+export function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
   const imgRef  = useRef(null);
   const dragRef = useRef(null);
 
@@ -12,6 +12,8 @@ function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
   const [zoom,   setZoom]   = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [busy,   setBusy]   = useState(false);
+  // "cover" = fill frame & crop edges · "contain" = show the whole image (letterboxed)
+  const [mode,   setMode]   = useState("cover");
 
   useEffect(() => {
     const u = URL.createObjectURL(file);
@@ -34,8 +36,10 @@ function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
 
   const { fw, fh } = frame;
 
-  // Base scale: image covers the entire crop frame
-  const bs = nat ? Math.max(fw / nat.w, fh / nat.h) : 1;
+  // Base scale: cover fills the frame (crops edges); contain fits the whole image.
+  const bs = nat
+    ? (mode === "contain" ? Math.min(fw / nat.w, fh / nat.h) : Math.max(fw / nat.w, fh / nat.h))
+    : 1;
   const ds = bs * zoom;
 
   // Keep image covering the crop frame at all times
@@ -53,9 +57,19 @@ function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
     const nw = e.currentTarget.naturalWidth;
     const nh = e.currentTarget.naturalHeight;
     setNat({ w: nw, h: nh });
-    const bsInit = Math.max(fw / nw, fh / nh);
+    const bsInit = mode === "contain" ? Math.min(fw / nw, fh / nh) : Math.max(fw / nw, fh / nh);
     setZoom(1);
     setOffset({ x: (fw - nw * bsInit) / 2, y: (fh - nh * bsInit) / 2 });
+  }
+
+  // Toggle crop/fit, re-centering the image at the new base scale.
+  function switchMode(m) {
+    if (m === mode) return;
+    setMode(m);
+    if (!nat) return;
+    const base = m === "contain" ? Math.min(fw / nat.w, fh / nat.h) : Math.max(fw / nat.w, fh / nat.h);
+    setZoom(1);
+    setOffset({ x: (fw - nat.w * base) / 2, y: (fh - nat.h * base) / 2 });
   }
 
   function onPointerDown(e) {
@@ -91,27 +105,28 @@ function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
     if (!nat || busy) return;
     setBusy(true);
     try {
-      let sx = -offset.x / ds;
-      let sy = -offset.y / ds;
-      let sW = fw / ds;
-      let sH = fh / ds;
-      sW = Math.min(sW, nat.w);
-      sH = Math.min(sH, nat.h);
-      sx = Math.max(0, Math.min(sx, nat.w - sW));
-      sy = Math.max(0, Math.min(sy, nat.h - sH));
-
-      const outW = Math.min(maxWidth, Math.round(sW));
+      // Render the frame exactly as shown: output matches the crop frame's
+      // aspect, the image is drawn at its on-screen position/scale, and any
+      // area not covered (fit mode letterbox) is filled white.
+      const outW = maxWidth;
       const outH = Math.round(outW / aspect);
+      const s = outW / fw; // frame px → output px
 
       const canvas = document.createElement("canvas");
       canvas.width  = outW;
       canvas.height = outH;
       const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, outW, outH);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(imgRef.current, sx, sy, sW, sH, 0, 0, outW, outH);
+      ctx.drawImage(
+        imgRef.current,
+        0, 0, nat.w, nat.h,
+        offset.x * s, offset.y * s, nat.w * ds * s, nat.h * ds * s,
+      );
 
-      const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.9));
+      const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.92));
       if (!blob) throw new Error("crop failed");
       onCropped(blob, URL.createObjectURL(blob));
     } finally {
@@ -179,7 +194,25 @@ function Cropper({ file, aspect, maxWidth, onCropped, onCancel }) {
             </div>
           </div>
 
-          <p className="text-[11px] text-ivory/40 text-center">Drag to reposition · zoom slider to resize</p>
+          {/* Crop / Fit toggle */}
+          <div className="flex items-center justify-center">
+            <div className="inline-flex bg-white/5 rounded-lg p-1 gap-1">
+              <button type="button" onClick={() => switchMode("cover")}
+                className={`px-3 h-8 rounded-md text-[12px] font-semibold transition ${mode === "cover" ? "bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900" : "text-ivory/55 hover:text-ivory"}`}>
+                Crop to fill
+              </button>
+              <button type="button" onClick={() => switchMode("contain")}
+                className={`px-3 h-8 rounded-md text-[12px] font-semibold transition ${mode === "contain" ? "bg-gradient-to-b from-gold-300 to-gold-500 text-ink-900" : "text-ivory/55 hover:text-ivory"}`}>
+                Fit whole image
+              </button>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-ivory/40 text-center">
+            {mode === "contain"
+              ? "The full image is shown on a white background · zoom / drag to adjust"
+              : "Drag to reposition · zoom slider to resize"}
+          </p>
 
           <div className="flex items-center gap-3">
             <Icon name="search" size={14} className="text-ivory/30 shrink-0" />

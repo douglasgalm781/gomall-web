@@ -16,18 +16,13 @@ const MOBILE_QUICK = [
   { key: "invite",   slug: "invite",   icon: "users", color: "from-violet-400/20 to-violet-600/10" },
 ];
 
-const MOBILE_SECTIONS = [
-  { titleKey: "profile.groupAccount", icon: "user", items: [
-    { key: "shippingInfo", slug: "shipping-info", icon: "mapPin" },
-    { key: "invite",       slug: "invite",        icon: "users"  },
-    { key: "language",     slug: "language",      icon: "globe"  },
-  ]},
-  { titleKey: "profile.groupFinance", icon: "coins", items: [
-    { key: "recharge", slug: "recharge", icon: "deposit"  },
-    { key: "withdraw", slug: "withdraw", icon: "withdraw" },
-    { key: "history",  slug: "history",  icon: "receipt"  },
-  ]},
-];
+// Mobile menu mirrors the desktop sidebar (SIDEBAR) exactly — same groups,
+// items, and order — so web and mobile stay in sync from a single source.
+const MOBILE_MENU = SIDEBAR.reduce((groups, item) => {
+  if (item.type === "section") groups.push({ labelKey: item.labelKey, items: [] });
+  else if (groups.length) groups[groups.length - 1].items.push(item);
+  return groups;
+}, []);
 
 export default function ProfilePage() {
   const session = useSession();
@@ -176,35 +171,30 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Menu sections */}
-          <div className="px-4 mt-4 space-y-4">
-            {/* Profile edit link */}
-            <div className="card-dark overflow-hidden">
-              <Link href="/profile" className="flex items-center gap-3 px-4 py-3.5 active:bg-white/5 transition">
-                <span className="w-9 h-9 rounded-xl gold-hairline bg-gold-400/10 text-gold-300 flex items-center justify-center shrink-0">
-                  <Icon name="user" size={17} />
-                </span>
-                <span className="flex-1 text-[14px] text-ivory/85">{t("profile.menu.profile")}</span>
-                <Icon name="chevronRight" size={16} className="text-gold-300/25 shrink-0" />
-              </Link>
-            </div>
-
-            {MOBILE_SECTIONS.map((sec) => (
-              <div key={sec.titleKey}>
-                <div className="flex items-center gap-2 px-1 mb-2">
-                  <Icon name={sec.icon} size={13} className="text-gold-300/60" />
-                  <span className="text-[11px] font-semibold text-ivory/35 uppercase tracking-[0.18em]">{t(sec.titleKey)}</span>
-                </div>
+          {/* Menu — mirrors the desktop sidebar exactly */}
+          <div className="px-4 mt-4 space-y-5">
+            {MOBILE_MENU.map((group) => (
+              <div key={group.labelKey}>
+                <p className="px-1 mb-2 text-[11px] font-semibold text-ivory/35 uppercase tracking-[0.18em]">{t(group.labelKey)}</p>
                 <div className="card-dark overflow-hidden divide-y divide-gold-400/10">
-                  {sec.items.map(({ key, slug, icon }) => (
-                    <Link key={key} href={`/profile/${slug}`} className="flex items-center gap-3 px-4 py-3.5 active:bg-white/5 transition">
-                      <span className="w-9 h-9 rounded-xl gold-hairline bg-gold-400/10 text-gold-300 flex items-center justify-center shrink-0">
-                        <Icon name={icon} size={17} />
-                      </span>
-                      <span className="flex-1 text-[14px] text-ivory/85">{t(`profile.menu.${key}`)}</span>
-                      <Icon name="chevronRight" size={16} className="text-gold-300/25 shrink-0" />
-                    </Link>
-                  ))}
+                  {group.items.map((item) => {
+                    // "overview" lives at /profile root on desktop (the hub on mobile),
+                    // so it gets the dedicated mobile edit route.
+                    const href  = item.slug ? `/profile/${item.slug}` : "/profile/account";
+                    const badge = badges[item.key];
+                    return (
+                      <Link key={item.key} href={href} className="flex items-center gap-3 px-4 py-3.5 active:bg-white/5 transition">
+                        <span className="w-9 h-9 rounded-xl gold-hairline bg-gold-400/10 text-gold-300 flex items-center justify-center shrink-0">
+                          <Icon name={item.icon} size={17} />
+                        </span>
+                        <span className="flex-1 text-[14px] text-ivory/85">{t(item.labelKey)}</span>
+                        {badge > 0 && (
+                          <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-gold-400 text-ink-900 text-[10px] font-bold flex items-center justify-center shrink-0">{badge}</span>
+                        )}
+                        <Icon name="chevronRight" size={16} className="text-gold-300/25 shrink-0" />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             ))}
