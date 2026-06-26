@@ -90,6 +90,9 @@ export default function LoginPage() {
         >
           {submitting ? t("common.loading") : t("login.submit")}
         </button>
+        <div className="text-center">
+          <Link href="/forgot-password" className="text-ivory/55 hover:text-gold-300 text-[13px] transition">{t("login.forgot")}</Link>
+        </div>
         <div className="text-center pt-1">
           <span className="text-ivory/50 text-[13px]">{t("login.noAccount")} </span>
           <Link href="/register" className="text-gold-300 text-[13px] font-semibold">{t("login.register")}</Link>

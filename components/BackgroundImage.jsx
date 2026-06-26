@@ -8,7 +8,7 @@ import { BACKGROUND_IMAGE } from "@/lib/data";
 export default function BackgroundImage() {
   const [ok, setOk] = useState(true);
   return (
-    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-phone md:max-w-[768px] lg:max-w-app z-0 pointer-events-none overflow-hidden">
+    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full lg:max-w-app z-0 pointer-events-none overflow-hidden">
       {ok && (
         <img
           src={BACKGROUND_IMAGE}

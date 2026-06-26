@@ -6,6 +6,7 @@ import GoToTop from "@/components/GoToTop";
 import BottomBar from "@/components/BottomBar";
 import Footer from "@/components/Footer";
 import LayoutSpacer from "@/components/LayoutSpacer";
+import OpenShopButton from "@/components/OpenShopButton";
 
 export const metadata = {
   title: "GoMall",
@@ -41,6 +42,7 @@ export default function RootLayout({ children }) {
               <Footer />
               <GoToTop />
               <BottomBar />
+              <OpenShopButton />
               <LayoutSpacer />
             </div>
             <div className="grain" aria-hidden="true" />

@@ -11,7 +11,7 @@ export default function TabBar() {
   const is = (p) => pathname === p;
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-phone md:max-w-[768px] lg:hidden z-30">
+    <div className="fixed bottom-0 inset-x-0 w-full lg:hidden z-30">
       <div className="relative glass-dark border-t border-gold-400/20 h-[70px] flex items-end justify-around px-8 pb-2.5">
         <Link
           href="/"

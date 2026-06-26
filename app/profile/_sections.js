@@ -65,6 +65,9 @@ export function OverviewSection({ session }) {
   const [form,    setForm]    = useState({ fullName: "", email: "", birthday: "", avatar: "", phone: "", address1: "", address2: "", city: "", state: "", country: "", postalCode: "" });
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
+  const [pw,        setPw]        = useState({ current: "", next: "", confirm: "" });
+  const [showPw,    setShowPw]    = useState(false);
+  const [changingPw, setChangingPw] = useState(false);
 
   useEffect(() => {
     api.get("/user/profile-info")
@@ -103,6 +106,22 @@ export function OverviewSection({ session }) {
       customToast.error(err?.message || t("common.loadFailed"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!pw.current || !pw.next) return customToast.warning(t("profile.pwFillAll"));
+    if (pw.next.length < 6)      return customToast.warning(t("register.passwordShort"));
+    if (pw.next !== pw.confirm)  return customToast.error(t("register.passwordMismatch"));
+    setChangingPw(true);
+    try {
+      await api.put("/user/password", { currentPassword: pw.current, newPassword: pw.next });
+      customToast.success(t("profile.pwChanged"));
+      setPw({ current: "", next: "", confirm: "" });
+    } catch (err) {
+      customToast.error(err?.message || t("common.loadFailed"));
+    } finally {
+      setChangingPw(false);
     }
   }
 
@@ -170,6 +189,41 @@ export function OverviewSection({ session }) {
           >
             {saving ? <><div className="w-4 h-4 border-2 border-ink-900 border-t-transparent rounded-full animate-spin" />{t("common.saving")}</> : t("common.save")}
           </button>
+
+          {/* ── Change password ─────────────────────────────────────── */}
+          <div className="pt-6 mt-2 border-t border-gold-400/12 space-y-4">
+            <div className="flex items-center gap-2">
+              <Icon name="lock" size={15} className="text-gold-300" />
+              <p className="text-[13px] font-semibold text-ivory/85">{t("profile.pwTitle")}</p>
+            </div>
+            {[
+              { key: "current", label: t("profile.pwCurrent"), ac: "current-password" },
+              { key: "next",    label: t("profile.pwNew"),     ac: "new-password" },
+              { key: "confirm", label: t("profile.pwConfirm"), ac: "new-password" },
+            ].map(({ key, label, ac }) => (
+              <div key={key}>
+                <label className="text-[11px] font-semibold text-gold-300/70 uppercase tracking-widest block mb-1.5">{label}</label>
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={pw[key]}
+                  onChange={(e) => setPw((p) => ({ ...p, [key]: e.target.value }))}
+                  autoComplete={ac}
+                  className="w-full bg-[#1c1610] border border-gold-400/20 rounded-xl px-4 h-11 text-[14px] text-ivory placeholder-ivory/30 outline-none focus:border-gold-400/50 transition"
+                />
+              </div>
+            ))}
+            <label className="flex items-center gap-2 text-[12px] text-ivory/55 cursor-pointer select-none">
+              <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="w-4 h-4 rounded accent-gold-400 cursor-pointer" />
+              {t("profile.pwShow")}
+            </label>
+            <button
+              onClick={handleChangePassword}
+              disabled={changingPw}
+              className="w-full btn-primary h-12 text-[14px] font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {changingPw ? <><div className="w-4 h-4 border-2 border-ink-900 border-t-transparent rounded-full animate-spin" />{t("common.saving")}</> : t("profile.pwSubmit")}
+            </button>
+          </div>
         </div>
       )}
     </SectionWrap>

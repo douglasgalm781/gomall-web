@@ -25,11 +25,13 @@ body {
 
 /* Phone frame — warm cream with soft gold light ------------------------- */
 .phone {
-  max-width: 440px;
+  max-width: 100%;
   margin: 0 auto;
   min-height: 100vh;
   position: relative;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) so the frame isn't turned into a scroll container —
+     keeps `position: sticky` headers stuck to the viewport. */
+  overflow-x: clip;
   background-color: #f6f1e7;
   background-image:
     radial-gradient(75% 32% at 50% -4%, rgba(176, 132, 44, 0.12), transparent 70%),
@@ -37,14 +39,7 @@ body {
     linear-gradient(180deg, #faf7f0 0%, #f6f1e7 55%, #f1eadc 100%);
   background-attachment: fixed;
 }
-/* Fill the viewport on large phones / tablets instead of leaving wide side
-   gaps around the 440px frame; the framed look returns on laptops (≥1024). */
-@media (min-width: 600px) {
-  .phone { max-width: 768px; }
-}
-@media (min-width: 1024px) {
-  .phone { max-width: 100%; }
-}
+/* The app fills the viewport at every size (no centered phone-column gaps). */
 
 /* Subtle paper grain */
 .grain {
@@ -414,4 +409,40 @@ body {
   background: rgba(199,154,60,0.5);
   margin: 0 20px;
   vertical-align: middle;
+}
+
+/* ── "Open a Shop" floating CTA — make it feel alive ──────────────────── */
+.shop-cta {
+  animation: shopGlow 2.2s ease-in-out infinite, shopBob 3s ease-in-out infinite;
+}
+.shop-cta-shine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent);
+  pointer-events: none;
+  animation: shopShine 3.4s ease-in-out infinite;
+}
+.shop-cta-icon { animation: shopIconPulse 2.2s ease-in-out infinite; }
+
+@keyframes shopGlow {
+  0%, 100% { box-shadow: 0 6px 18px -6px rgba(216,183,106,0.55), 0 0 0 0 rgba(216,183,106,0); }
+  50%      { box-shadow: 0 10px 28px -6px rgba(216,183,106,0.9), 0 0 0 7px rgba(216,183,106,0.14); }
+}
+@keyframes shopBob {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-7px); }
+}
+@keyframes shopShine {
+  0%   { transform: translateX(-130%) skewX(-20deg); opacity: 0; }
+  18%  { opacity: 0.7; }
+  45%  { transform: translateX(260%) skewX(-20deg); opacity: 0; }
+  100% { transform: translateX(260%) skewX(-20deg); opacity: 0; }
+}
+@keyframes shopIconPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.18) rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-cta, .shop-cta-shine, .shop-cta-icon { animation: none !important; }
 }

@@ -49,7 +49,7 @@ export default function BottomBar() {
 
   return (
     <div
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-phone md:max-w-[768px] z-40 lg:hidden"
+      className="fixed bottom-0 inset-x-0 w-full z-40 lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)", backgroundColor: "rgba(12, 10, 7, 0.96)" }}
     >
       {/* Frosted glass bar */}

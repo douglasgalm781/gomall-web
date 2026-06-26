@@ -531,7 +531,7 @@ export default function ProductPage() {
       )}
 
       {/* ── Mobile fixed CTA ─────────────────────────────────────────── */}
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-phone md:max-w-[768px] lg:hidden z-30 glass-dark border-t border-gold-400/15 px-4 py-3">
+      <div className="fixed bottom-16 inset-x-0 w-full lg:hidden z-30 glass-dark border-t border-gold-400/15 px-4 py-3">
         <div className="flex items-center gap-2 max-w-md mx-auto">
           <div className="flex items-center gap-1.5 bg-white/5 gold-hairline rounded-2xl px-2.5 h-[52px] shrink-0">
             <button onClick={() => setQty((q) => Math.max(1, q - 1))}
